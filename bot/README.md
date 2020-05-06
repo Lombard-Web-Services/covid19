@@ -52,9 +52,9 @@ wget -O public_html/data/cc.csv https://raw.githubusercontent.com/Lombard-Web-Se
 
 ## scraper.php options
 Here are the cli options 
-f - folder where the datas are saved from the relative path of this script (without slash on start and in the end)
-c - options for checking duplicates/updates during the update (yes or no)
-s - start date (the start date of the dataset format d-m-Y  (first date is 22-01-2020)
+* f - folder where the datas are saved from the relative path of this script (without slash on start and in the end)
+* c - options for checking duplicates/updates during the update (yes or no)
+* s - start date (the start date of the dataset format d-m-Y  (first date is 22-01-2020)
 
 Example if you need the dataset since the start of the covid without checking for duplicates into your database: 
 ```sh
