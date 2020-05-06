@@ -47,7 +47,7 @@ Secondly put the scraper.php file into a "secure" directory, (IE behind the publ
 ```sh
 chmod +x scraper.php
 mkdir -p public_html/data/
-wget -O public_html/data/cc.csv https://raw.githubusercontent.com/Lombard-Web-Services/covid19/tree/master/bot/cc.csv
+wget -O public_html/data/cc.csv https://raw.githubusercontent.com/Lombard-Web-Services/covid19/master/bot/cc.csv
 ```
 
 ## scraper.php options
