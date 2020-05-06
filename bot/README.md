@@ -88,9 +88,9 @@ $rowresultlimit = 9999999;
 
 ## jsonmap.php options
 
-f - folder where the datas are saved from the relative path of this script (without slash on start and in the end)
-g - For group request 
-n - options for checking numbers of days between today
+* f - folder where the datas are saved from the relative path of this script (without slash on start and in the end)
+* g - For group request 
+* n - options for checking numbers of days between today
 
 the parameter g : Is for grouping result by a specific parameter key, list of parameters :IDMC FIPS Admin2 Province_State Country_Region Country_Code Country_CodeA3 Last_Update Lat Lon Confirmed Deaths Recovered Active Combined_Key,Ndate,NCCdate
 
