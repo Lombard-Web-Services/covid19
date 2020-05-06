@@ -38,7 +38,7 @@ CREATE TABLE `COVID19_TABLE` (
  `Recovered` VARCHAR(20),
  `Active` VARCHAR(20),
  `Combined_Key` VARCHAR(500),
- PRIMARY KEY ( `IDCOVID19_TABLE` )
+ PRIMARY KEY ( `IDMC` )
 ) ENGINE = InnoDB
 ```
 Note: in this example I have used "COVID19"as database name and "COVID19_TABLE" as table name, feel free to change these information by your own configuration.
@@ -164,5 +164,5 @@ To setup a daily covid standard deviation and coefficient of variation generatio
 Do not forget to replace the "scriptabsolutepath" by the script absolute path.
 
 [comment]: #
-   [cc.csv]: <https://raw.githubusercontent.com/Lombard-Web-Services/covid19/tree/master/bot/cc.csv>
+   [cc.csv]: <https://raw.githubusercontent.com/Lombard-Web-Services/covid19/master/bot/cc.csv>
 
