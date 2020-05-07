@@ -1,0 +1,91 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>dvscharts Example</title>
+
+		<style type="text/css">
+#result {
+    text-align: right;
+    color: gray;
+    min-height: 2em;
+}
+#table-sparkline {
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+th {
+    font-weight: bold;
+    text-align: left;
+}
+td, th {
+    padding: 5px;
+    border-bottom: 1px solid silver;
+    height: 20px;
+}
+
+thead th {
+    border-top: 2px solid gray;
+    border-bottom: 2px solid gray;
+}
+.dvscharts-tooltip>span {
+    background: white;
+    border: 1px solid silver;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px #888;
+    padding: 8px;
+}
+		</style>
+	</head>
+	<body>
+<script src="js/jquery.js"></script>
+<script src="js/dvscharts.js"></script>
+
+<div id="result"></div>
+<table id="table-sparkline">
+    <thead>
+        <tr>
+            <th>State</th>
+            <th>Income</th>
+            <th>Income per quarter</th>
+            <th>Costs</th>
+            <th>Costs per quarter</th>
+            <th>Result</th>
+            <th>Result per quarter</th>
+        </tr>
+    </thead>
+    <tbody id="tbody-sparkline">
+        <tr>
+            <th>Alabama</th>
+            <td>254</td>
+            <td data-sparkline="71, 78, 39, 66, 32"/>
+            <td>296</td>
+            <td data-sparkline="68, 52, 80, 96 "/>
+            <td>-42</td>
+            <td data-sparkline="3, 26, -41, -30"/>
+        </tr>
+        <tr>
+            <th>Alaska</th>
+            <td>246</td>
+            <td data-sparkline="87, 44, 74, 41 "/>
+            <td>181</td>
+            <td data-sparkline="29, 54, 73, 25 "/>
+            <td>65</td>
+            <td data-sparkline="58, -10, 1, 16"/>
+        </tr>
+        <tr>
+            <th>Arizona</th>
+            <td>101</td>
+            <td data-sparkline="56, 12, 8, 25 "/>
+            <td>191</td>
+            <td data-sparkline="69, 14, 53, 55 "/>
+            <td>-90</td>
+            <td data-sparkline="-13, -2, -45, -30"/>
+        </tr>
+    </tbody>
+</table>
+<script src="js/sparkline.js"></script>
+
+	</body>
+</html>

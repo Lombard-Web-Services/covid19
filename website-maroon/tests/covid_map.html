@@ -1,0 +1,104 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>Covid 19 - Progression Choropleth - World Map</title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <link href="css/flags32.css" media="screen" rel="stylesheet" type="text/css"/>
+    <link href="css/tlmaps.css" media="screen" rel="stylesheet" type="text/css"/>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="js/jquery.tlmap.js"></script>
+    <script type="text/javascript" src="maps/jquery.tlmap.world.js" charset="utf-8"></script>
+	<script type="text/javascript" src="js/choropleth.js" charset="utf-8"></script>
+  </head>
+  <body>
+   <div class="mapcontainer">
+    <div id="tlmap">
+    </div><!-- end of tlmap-->
+   <!-- parameters legend start -->
+     <div class="project-legend middle density">
+      <a id="atoggletrois">&#x25B2;</a>  
+      <ul>
+       <li class="min">
+       Parameters
+       </li>
+       <li class="graph leg litrois" style="border-radius: 0; border:none">
+        <div class="colors">
+         <label class="containerradio">Confirmed&nbsp;
+           <input type="radio" name="radio" value="Confirmed">
+           <span class="checkmark"></span>
+         </label>
+         <label class="containerradio">Deaths&nbsp;
+           <input type="radio" checked="checked" name="radio" value="Deaths">
+           <span class="checkmark"></span>
+         </label>
+         <label class="containerradio">Recovered&nbsp;
+           <input type="radio" name="radio" value="Recovered">
+           <span class="checkmark"></span>
+         </label>
+         <label class="containerradio">Active&nbsp;
+           <input type="radio" name="radio" value="Active">
+           <span class="checkmark"></span>
+         </label>
+        </div>
+       </li>
+      </ul>
+     </div>
+    <!-- parameters legend stop-->
+    <!-- Arithmetic progression legend start-->
+     <div class="project-legend left density">
+      <a id="atoggleun">&#x25B2;</a>  
+      <ul>
+       <li class="min">
+       Progression &nbsp;[<a id="changeset" style="color:#666;text-decoration:none;cursor:pointer;text-transform:none;">polynomial</a>&nbsp;/&nbsp;<a id="changesetlin" style="color:#666;text-decoration:none;cursor:pointer;text-transform:none;">linear</a>]
+       </li>
+       <li class="graph leg liun" style="border-radius: 0; border:none">
+        <div class="colors">
+         <div class="quartile" id="legendcolor0"></div>
+         <div class="quartile" id="legendcolor1"></div>
+         <div class="quartile" id="legendcolor2"></div>
+         <div class="quartile" id="legendcolor3"></div>
+         <div class="quartile" id="legendcolor4"></div>
+        </div>
+        <div class="colors" id="legendval" style="font-weight:normal; text-align: center">
+         <div class="quartile" style="padding-top: 5px" id="legendvalue0">[0-20%]</div>
+         <div class="quartile" style="padding-top: 5px" id="legendvalue1">[20%-40%]</div>
+         <div class="quartile" style="padding-top: 5px" id="legendvalue2">[40%-60%]</div>
+         <div class="quartile" style="padding-top: 5px" id="legendvalue3">[60%-80%]</div>
+         <div class="quartile" style="padding-top: 5px" id="legendvalue4">[80%-100%]</div>
+        </div>
+       </li>
+      </ul>
+     </div>
+     <!-- arithmetic progression legend end -->
+     <!-- start timeline slider -->
+     <div class="right project-legend density">  
+      <a id="atoggledeux">&#x25B2;</a>  
+      <ul>
+       <li class="min">
+       <a id="nbdays" style="color:#666;text-decoration:none;"></a> days ago</a>
+       </li>
+       <li class="graph leg lideux" style="border-radius: 0; border:none">
+        <div class="colors">
+         <div class="lideux" style="width:100%;position:relative;display:block;vertical-align:middle;padding-top:1em;">  
+          <input  type="range" min="0" max="7" value="0" class="slider slidecontainer" id="myRange" list="sliderticks" />
+           <datalist id="sliderticks" class="sliderticks" style="z-index:0;">
+             <p>0</p>
+             <p>1</p>
+             <p>2</p>
+             <p>3</p>
+             <p>4</p>
+             <p>5</p>
+             <p>6</p>
+             <p>7</p>
+           </datalist>          
+         </div>
+        </div>
+       </li>
+      </ul>
+     </div>
+     <!-- end of slider -->
+     <div class="copyright">&copy;&nbsp;<!-- Your site name --><a style="text-decoration:none;" id="srcdata"></a></div>
+   </div><!-- end of mapcontainer -->
+  </body>
+</html>
