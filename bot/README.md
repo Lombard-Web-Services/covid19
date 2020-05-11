@@ -104,7 +104,7 @@ If the group parameter is used a cumulative sum will take effect on each of thes
 
 To get the full dataset since the 22nd of january 2020 on a based range of 8 days :
 ```sh
-php jsonmap.php --d=22-01-2020 --f=src --n=8 --g=NCCdate
+php jsonmap.php --d=22-01-2020 --f=public_html/data --n=8 --g=NCCdate
 ```
 
 ## jsonmap.php cron
