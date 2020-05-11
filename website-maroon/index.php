@@ -250,9 +250,13 @@ if($htoday <$updatehour){
 echo "    <div class=\"shareall\">
 </div>
 ";
-     // generate rows
+     // generate rows & get date
+     if(isset($_GET["d"]) && $_GET["d"]  ==  validateDate($_GET["d"], "d-m-Y")){
+     $d =  date('Y-m-d', strtotime($_GET["d"]));
+     $query = "SELECT * FROM `".$tablename."` WHERE DATE(`ToDate`)='".$d."' AND `Country_Code`!='undefined'  ORDER BY ABS(`Deaths`) DESC";
+     }else{
      $query = "SELECT * FROM `".$tablename."` WHERE `ToDate`=DATE('".$today."') AND `Country_Code`!='undefined'  ORDER BY ABS(`Deaths`) DESC";
-    // echo $query;
+     }
      $result=mysqli_query($link,$query)or die( mysqli_error($link) );
      $i=0;
      $Deathsarray = array();

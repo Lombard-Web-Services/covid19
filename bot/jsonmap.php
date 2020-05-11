@@ -14,31 +14,20 @@ ini_set("display_errors",1);
 ini_set("memory_limit", "-1");
 set_time_limit(0);
 
+$d = getopt(null, ["d:"]);
 $f = getopt(null, ["f:"]);
 $n = getopt(null, ["n:"]);
 $g = getopt(null, ["g:"]);
 if (!isset($argv[1])) {
-echo "Could not get value of command line option\nf - folder where the datas are saved from the relative path of this script (without slash on start and in the end)\ng - For group request\nn - options for checking numbers of days between today\n\nExample for 15 days: \nphp ".basename(__FILE__)." --f=public_html/data --n=15 --g=NCCdate\n";
+echo "Could not get value of command line option\nd - date where all the files will be generated one by one\nf - folder where the datas are saved from the relative path of this script (without slash on start and in the end)\ng - For group request\nn - options for checking numbers of days between today\n\nExample for 15 days: \nphp ".basename(__FILE__)." --f=src --n=15 --g=NCCdate\n\nTo get the full dataset on a based range of 8 days :\nphp ".basename(__FILE__)." --d=22-01-2020 --f=src --n=8 --g=NCCdate\n";
 exit;
 }
+$daysfrom = $d["d"];
 $folderwheresaved = $f["f"];
 $numberofdays = $n["n"];
 $groupselected = $g["g"];
-// the date today is
-$htoday =  date("H");
-if($htoday < $updatehour){
-	$today = date("Y-m-d",strtotime(date("Y-m-d")." -2 day"));
-}else{
- $today = date("Y-m-d",strtotime(date("Y-m-d")." -1 day"));
-}
-$before = date("Y-m-d",strtotime($today." -".$numberofdays." day"));
-$daterequest = "(DATE(`Last_Update`) BETWEEN '".$before."' AND '".$today."')";
-echo "querying date from ".$today." to ".$before."\n";
-// set up error management
-$errflag = false;
-$errmsg_arr = array();
 
-//Connection mysqli
+//MySQL
 $link = mysqli_connect($host,$username,$password,$dbname);
 if (!$link->set_charset("utf8")) {
 	printf("Error loading character set utf8: %s\n", $con->error);
@@ -70,39 +59,12 @@ function validateDate($date, $format = 'Y-m-d H:i:s')
 	$d = DateTime::createFromFormat($format, $date);
 	return $d && $d->format($format) == $date;
 }
-
 // calculate the number of days between the 2 dates
 function dateDiff($date1, $date2){
 	  $date1_ts = strtotime($date1);
 	  $date2_ts = strtotime($date2);
 	  $diff = $date2_ts - $date1_ts;
 	  return round($diff / 86400);
-}
-$interval = dateDiff($before, $today);
-
-//IDMC	FIPS	Admin2	Province_State	Country_Region	Country_Code	Country_CodeA3	Last_Update	Lat	Lon	Confirmed	Deaths	Recovered	Active	Combined_Key
-$query = "SELECT * FROM `".$tablename."` WHERE ".$daterequest." ORDER BY Last_Update;\n";
-//echo "debug : \n".$query."\n";
-$result=mysqli_query($link,$query)or die( mysqli_error($link) );
-$props = array();
-$propspush=array();
-// limit the number of results if the request is too big
-$rowcount = mysqli_num_rows($result);
-if(!isset($g) && $rowcount > $rowresultlimit){
-echo json_encode(array("error"=>"request is too big"),JSON_PRETTY_PRINT);
-exit;
-}
-while($row = mysqli_fetch_array($result, MYSQLI_ASSOC))
-{ 
- if(!isset($row["Country_Code"]) || $row["Country_Code"] == ""){
- // Debugging undefined row 
- $NCCdate = date("Y-m-d",strtotime($row["Last_Update"])).".undefined";
- $propspush =array("IDMC"=>$row["IDMC"],"Ndate"=>date("Y-m-d",strtotime($row["Last_Update"])),"NCCdate"=>$NCCdate, "FIPS"=>$row["FIPS"], "Admin2"=>$row["Admin2"], "Province_State"=>$row["Province_State"], "Country_Region"=>$row["Country_Region"], "Country_Code"=>"undefined", "Country_CodeA3"=>"undefined", "Last_Update"=>$row["Last_Update"], "Lat"=>$row["Lat"], "Lon"=>$row["Lon"], "Confirmed"=>$row["Confirmed"], "Deaths"=>$row["Deaths"], "Recovered"=>$row["Recovered"], "Active"=>$row["Active"], "Combined_Key"=>$row["Combined_Key"]);
-  }else{
- $NCCdate = date("Y-m-d",strtotime($row["Last_Update"])).".".$row["Country_Code"];
- $propspush =array("IDMC"=>$row["IDMC"],"Ndate"=>date("Y-m-d",strtotime($row["Last_Update"])),"NCCdate"=>$NCCdate, "FIPS"=>$row["FIPS"], "Admin2"=>$row["Admin2"], "Province_State"=>$row["Province_State"], "Country_Region"=>$row["Country_Region"], "Country_Code"=>trim($row["Country_Code"]), "Country_CodeA3"=>$row["Country_CodeA3"], "Last_Update"=>$row["Last_Update"], "Lat"=>$row["Lat"], "Lon"=>$row["Lon"], "Confirmed"=>$row["Confirmed"], "Deaths"=>$row["Deaths"], "Recovered"=>$row["Recovered"], "Active"=>$row["Active"], "Combined_Key"=>$row["Combined_Key"]);
-  }
-	array_push($props,$propspush);  
 }
 function getgroup($data,$columnname) {
 $groups = array();
@@ -150,23 +112,80 @@ $key++;
 }
 return $groups;
 }
-
-$tmp = realpath(dirname($_SERVER['PHP_SELF']))."/".$folderwheresaved."/map_".$today.".json";
-
+function generateJSON($tablename,$daterequest,$thetoday,$theinterval){
+global $folderwheresaved;
+global $numberofdays;
+global $groupselected;
+global $link;
+global $rowresultlimit;
+//IDMC	FIPS	Admin2	Province_State	Country_Region	Country_Code	Country_CodeA3	Last_Update	Lat	Lon	Confirmed	Deaths	Recovered	Active	Combined_Key
+$query = "SELECT * FROM `".$tablename."` WHERE ".$daterequest." ORDER BY Last_Update;";
+//echo "debug : \n".$query."\n";
+$result=mysqli_query($link,$query)or die( mysqli_error($link) );
+$props = array();
+$propspush=array();
+// limit the number of results if the request is too big
+$rowcount = mysqli_num_rows($result);
+if(!isset($g) && $rowcount > $rowresultlimit){
+echo json_encode(array("error"=>"request is too big"),JSON_PRETTY_PRINT);
+exit;
+}
+while($row = mysqli_fetch_array($result, MYSQLI_ASSOC))
+{ 
+ if(!isset($row["Country_Code"]) || $row["Country_Code"] == ""){
+ // Debugging undefined row 
+ $NCCdate = date("Y-m-d",strtotime($row["Last_Update"])).".undefined";
+ $propspush =array("IDMC"=>$row["IDMC"],"Ndate"=>date("Y-m-d",strtotime($row["Last_Update"])),"NCCdate"=>$NCCdate, "FIPS"=>$row["FIPS"], "Admin2"=>$row["Admin2"], "Province_State"=>$row["Province_State"], "Country_Region"=>$row["Country_Region"], "Country_Code"=>"undefined", "Country_CodeA3"=>"undefined", "Last_Update"=>$row["Last_Update"], "Lat"=>$row["Lat"], "Lon"=>$row["Lon"], "Confirmed"=>$row["Confirmed"], "Deaths"=>$row["Deaths"], "Recovered"=>$row["Recovered"], "Active"=>$row["Active"], "Combined_Key"=>$row["Combined_Key"]);
+  }else{
+ $NCCdate = date("Y-m-d",strtotime($row["Last_Update"])).".".$row["Country_Code"];
+ $propspush =array("IDMC"=>$row["IDMC"],"Ndate"=>date("Y-m-d",strtotime($row["Last_Update"])),"NCCdate"=>$NCCdate, "FIPS"=>$row["FIPS"], "Admin2"=>$row["Admin2"], "Province_State"=>$row["Province_State"], "Country_Region"=>$row["Country_Region"], "Country_Code"=>trim($row["Country_Code"]), "Country_CodeA3"=>$row["Country_CodeA3"], "Last_Update"=>$row["Last_Update"], "Lat"=>$row["Lat"], "Lon"=>$row["Lon"], "Confirmed"=>$row["Confirmed"], "Deaths"=>$row["Deaths"], "Recovered"=>$row["Recovered"], "Active"=>$row["Active"], "Combined_Key"=>$row["Combined_Key"]);
+  }
+	array_push($props,$propspush);  
+}
+$tmp = realpath(dirname($_SERVER['PHP_SELF']))."/".$folderwheresaved."/map_".$thetoday.".json";
+echo "\n Writing data into the file : ".$tmp."\n";
 $columnarray = array("IDMC","FIPS","Admin2","Province_State","Country_Region","Country_Code","Country_CodeA3","Last_Update","Lat","Lon","Confirmed","Deaths","Recovered","Active","Combined_Key","Ndate","NCCdate");
 if(isset($groupselected) && in_array($groupselected,$columnarray)){
  $props2 = getgroup($props,$groupselected);
  $nbkeys = count($props2);
- array_unshift($props2,array("days"=>$interval,"count"=>$nbkeys,"baserowcount"=>$rowcount));
+ array_unshift($props2,array("days"=>$theinterval,"count"=>$nbkeys,"baserowcount"=>$rowcount));
 $thecontent = json_encode($props2);
 }else{
 $nbkeys = count($props);
-array_unshift($props,array("days"=>$interval,"count"=>$nbkeys,"baserowcount"=>$rowcount));
+array_unshift($props,array("days"=>$theinterval,"count"=>$nbkeys,"baserowcount"=>$rowcount));
 $thecontent = json_encode($props);
 }
  $out = fopen($tmp, "w");
  fwrite($out, $thecontent);
  fclose($out);
 mysqli_free_result($result);   
+}
+// the date today is
+$htoday =  date("H");
+if($htoday < $updatehour){
+	$today = date("Y-m-d",strtotime(date("Y-m-d")." -2 day"));
+}else{
+ $today = date("Y-m-d",strtotime(date("Y-m-d")." -1 day"));
+}
+if(isset($daysfrom)){
+$numberloop = dateDiff(date("Y-m-d",strtotime($daysfrom)), $today);
+echo "Loop started between ".$daysfrom." to ".$today." thats ".$numberloop." days\n";
+for($i=0 ;$i<=$numberloop;$i++){
+$daysfromi = date("Y-m-d",strtotime(date("Y-m-d",strtotime($daysfrom))." +".$i." day"));
+$theactualdateminus = date("Y-m-d",strtotime(date("Y-m-d",strtotime($daysfromi))." -".$numberofdays." day"));
+echo "generating data #".$i." from ".$daysfromi." to ".$theactualdateminus." on a ".$numberofdays." days interval\n";
+$daterequest = "(DATE(`Last_Update`) BETWEEN '".$theactualdateminus."' AND '".$daysfromi."')";
+$debugreq ="SELECT * FROM `".$tablename."` WHERE ".$daterequest." ORDER BY Last_Update;";
+echo "Launching :\n".$debugreq;
+$interval = dateDiff($theactualdateminus,$daysfromi);
+generateJSON($tablename,$daterequest,$daysfromi,$interval,$link);
+}
+}else{
+$before = date("Y-m-d",strtotime($today." -".$numberofdays." day"));
+$daterequest = "(DATE(`Last_Update`) BETWEEN '".$before."' AND '".$today."')";
+echo "querying date from ".$today." to ".$before."\n";
+$interval = dateDiff($before, $today);
+generateJSON($tablename,$daterequest,$today,$interval,$link);
+}  
 ?>
 

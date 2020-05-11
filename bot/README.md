@@ -91,6 +91,7 @@ $rowresultlimit = 9999999;
 * f - folder where the datas are saved from the relative path of this script (without slash on start and in the end)
 * g - For group request 
 * n - options for checking numbers of days between today
+* d - date where all the files will be generated one by one
 
 the parameter g : Is for grouping result by a specific parameter key, list of parameters :IDMC FIPS Admin2 Province_State Country_Region Country_Code Country_CodeA3 Last_Update Lat Lon Confirmed Deaths Recovered Active Combined_Key,Ndate,NCCdate
 
@@ -100,6 +101,11 @@ NCCdate represent the normal date with country code(alpha2) parameter included (
 
 Effect of the group parameter function :
 If the group parameter is used a cumulative sum will take effect on each of these specific fields/columns :Confirmed,Deaths,Recovered,Active 
+
+To get the full dataset since the 22nd of january 2020 on a based range of 8 days :
+```sh
+php jsonmap.php --d=22-01-2020 --f=src --n=8 --g=NCCdate
+```
 
 ## jsonmap.php cron
 To generate daily a JSON database of a 8 days range of cumulated results grouped by Country codes and by date
@@ -154,7 +160,13 @@ $updatehour = 8;
 $rowresultlimit = 9999999;
 ```
 ## covid_table.php options
-f - the destination directory without first and last slashes where the csv file will be saved
+* f - the destination directory without first and last slashes where the csv file will be saved
+* d - option issue the database results from a specific date
+
+Example to get all the variations tables since a specific date: 
+```sh
+php covid_table.php --f=public_html/data --d=01-04-2020
+```
 
 ## covid_table.php cron
 To setup a daily covid standard deviation and coefficient of variation generation table import at 7 o'clock AM.

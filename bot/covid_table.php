@@ -10,12 +10,22 @@ $tablenameSD = "SD";
 $updatehour = 8;
 // limit the result for a row request without grouping
 $rowresultlimit = 10000;
-ini_set("display_errors",1);
+ini_set("display_errors",0);
 // setting up commandline args
 $f = getopt(null, ["f:"]);
+$d = getopt(null, ["d:"]);
+
+
+if (!isset($argv[1])) {
+echo "Could not get value of command line option\nf - folder/filename where the datas are saved from the relative path of this script (csv extension)\nd - option issue the database results from a specific date\n\nExample : \nphp ".basename(__FILE__)." --f=public_html/data --d=01-04-2020\n";
+exit;
+}
 $folderwheresaved = $f["f"];
-// the date today is
-$date2= date('Y-m-d');
+$datefrom = $d["d"];
+
+//cb
+if(!isset($_GET["callback"])){$callback = "callback";} else {$callback = $_GET["callback"];}
+
 //Connection mysqli
 $link = mysqli_connect($host,$username,$password,$dbname);
 if (!$link->set_charset("utf8")) {
@@ -56,18 +66,9 @@ function dateDiff($date1, $date2){
 	  return round($diff / 86400);
 }
 
-$htoday =  date("H");
-if($htoday <$updatehour){
-  $today = date("Y-m-d",strtotime(date("Y-m-d")." -2 day"));
- }else{
-  $today = date("Y-m-d",strtotime(date("Y-m-d")." -1 day"));
-}
-$yesterday = date("Y-m-d",strtotime($today." -1 day"));
-$d = $today;
-$before = date("Y-m-d",strtotime($today." -32 day"));
-$interval = dateDiff($before, $today);
-$daterequest = "(DATE(`Last_Update`) BETWEEN '".$before."' AND '".$today."')";
 
+
+function selectfromdate($rowresultlimit,$link,$daterequest){
 //IDMC	FIPS	Admin2	Province_State	Country_Region	Country_Code	Country_CodeA3	Last_Update	Lat	Lon	Confirmed	Deaths	Recovered	Active	Combined_Key
 $query = "SELECT * FROM `MC` WHERE ".$daterequest." ORDER BY Last_Update;\n";
 //echo "debug : \n".$query."\n";
@@ -89,6 +90,9 @@ while($row = mysqli_fetch_array($result, MYSQLI_ASSOC))
 	array_push($props,$propspush);  
 }
 mysqli_free_result($result);  
+$ret = array("props"=>$props,"rowcount"=>$rowcount);
+return $ret;
+}
 
 function getgroup($data,$columnname) {
 $groups = array();
@@ -137,9 +141,7 @@ $key++;
 }// fin foreach
 return $groups;
 }
-// standard deviation and variation coefficient algorithm
-// from a multidimensionnal array
-// see regression tree algorithm for this kind of standard deviation.
+
 function calculETCO($untableau, $unmontant){
 $leffectiftotal = count($untableau);
 $lamoyennedeleffectif = 0;
@@ -170,14 +172,8 @@ $ETCO =array(round($lecarttype,3),round($lecoeff,2));
 return $ETCO;
 }
 
-$columnarray = array("IDMC","FIPS","Admin2","Province_State","Country_Region","Country_Code","Country_CodeA3","Last_Update","Lat","Lon","Confirmed","Deaths","Recovered","Active","Combined_Key","Ndate","NCCdate");
- $props2 = getgroup($props,"NCCdate");
- $nbkeys = count($props2);
-array_unshift($props2,array("days"=>$interval,"count"=>$nbkeys,"baserowcount"=>$rowcount));
-
 //retreive all the values without cumulative sums
-function retreivevalbydays($multidimensionnalarray,$countrycodekey,$columnkeyConfirmed,$columnkeyDeaths,$columnkeyRecovered,$columnkeyActive){
- global $today;
+function retreivevalbydays($multidimensionnalarray,$countrycodekey,$columnkeyConfirmed,$columnkeyDeaths,$columnkeyRecovered,$columnkeyActive,$thedatetoday){
  $allConfirmedbydays = array();
  $allDeathsbydays = array();
  $allRecoveredbydays = array();
@@ -189,67 +185,67 @@ function retreivevalbydays($multidimensionnalarray,$countrycodekey,$columnkeyCon
  
  // find the cumulative results
  foreach($multidimensionnalarray as $key3 => $val3){
-  if(isset($val3["Country_Code"]) && $val3["Country_Code"] == $countrycodekey && $val3["Ndate"] == $today){
-	 $totalConfirmed = $val3["Confirmed"];
-	 $totalDeaths = $val3["Deaths"];
-	 $totalRecovered = $val3["Recovered"];
-	 $totalActive = $val3["Active"];
+  if(isset($val3["Country_Code"]) && $val3["Country_Code"] == $countrycodekey && $val3["Ndate"] == $thedatetoday){
+	 $totalConfirmed = $val3[$columnkeyConfirmed];
+	 $totalDeaths = $val3[$columnkeyDeaths];
+	 $totalRecovered = $val3[$columnkeyRecovered];
+	 $totalActive = $val3[$columnkeyActive];
   }
  }
  // minus day befores ...
  foreach($multidimensionnalarray as $key4 => $val4){
   if(isset($val4["Country_Code"]) && $val4["Country_Code"] == $countrycodekey){
-	$NdatearrConfirmed[$val4["Ndate"]] = $val4[$columnkeyConfirmed];
-	$NdatearrDeaths[$val4["Ndate"]] = $val4[$columnkeyDeaths];
-	$NdatearrRecovered[$val4["Ndate"]] = $val4[$columnkeyRecovered];
-	$NdatearrActive[$val4["Ndate"]] = $val4[$columnkeyActive];
+  $NdatearrConfirmed[$val4["Ndate"]] = $val4["Confirmed"];
+  $NdatearrDeaths[$val4["Ndate"]] = $val4["Deaths"];
+  $NdatearrRecovered[$val4["Ndate"]] = $val4["Recovered"];
+  $NdatearrActive[$val4["Ndate"]] = $val4["Active"];
   }
  }
  $i = 0;
  foreach($NdatearrDeaths as $key => $val){
 	$i++;
 	$Deathsdate = date("Y-m-d",strtotime($key." -1 day"));
-	if(isset($NdatearrDeaths[$Deathsdate])){
+	$Deathsdate2 = date("Y-m-d",strtotime($key." -2 day"));
+ // Important : 
+ // disable false negative
+ // disable Error of more than 4000 deaths GB 2020-04-29 
+	if(isset($NdatearrDeaths[$Deathsdate]) && ($NdatearrDeaths[$Deathsdate]<$val) && ($NdatearrDeaths[$Deathsdate2]<$NdatearrDeaths[$Deathsdate]) && ($i<count($NdatearrDeaths)) && (($Deathsdate!="2020-04-29") && ($val!="26166"))){
 	$computerDeaths= $val - $NdatearrDeaths[$Deathsdate];
- if($computerDeaths>0){
-	$allDeathsbydays[] = array("Deathsbydays"=>$computerDeaths);
- }
+//	echo $Deathsdate." ".$val." > ".$NdatearrDeaths[$Deathsdate]." = ".$computerDeaths."\n";
+ $allDeathsbydays[] = array("Deathsbydays"=>$computerDeaths);
 	}
  }
-  $j = 0;
+ $j = 0;
  foreach($NdatearrConfirmed as $key => $val){
 	$j++;
 	$Confirmeddate = date("Y-m-d",strtotime($key." -1 day"));
-	if(isset($NdatearrConfirmed[$Confirmeddate])){
+	$Confirmeddate2 = date("Y-m-d",strtotime($key." -2 day"));
+	if(isset($NdatearrConfirmed[$Confirmeddate]) && ($NdatearrConfirmed[$Confirmeddate]<$val) && ($NdatearrConfirmed[$Confirmeddate2]<$NdatearrConfirmed[$Confirmeddate]) && ($j<count($NdatearrConfirmed))){
 	$computerConfirmed= $val - $NdatearrConfirmed[$Confirmeddate];
-	if($computerConfirmed>0){
  $allConfirmedbydays[] = array("Confirmedbydays"=>$computerConfirmed);
- }
 	}
  }
-  $k = 0;
+ $k = 0;
  foreach($NdatearrRecovered as $key => $val){
 	$k++;
 	$Recovereddate = date("Y-m-d",strtotime($key." -1 day"));
-	if(isset($NdatearrRecovered[$Recovereddate])){
+	$Recovereddate2 = date("Y-m-d",strtotime($key." -2 day"));
+	if(isset($NdatearrRecovered[$Recovereddate]) && ($NdatearrRecovered[$Recovereddate]<$val) && ($NdatearrRecovered[$Recovereddate2]<$NdatearrRecovered[$Recovereddate]) && ($k<count($NdatearrRecovered))){
 	$computerRecovered= $val - $NdatearrRecovered[$Recovereddate];
- if($computerRecovered>0){
 	$allRecoveredbydays[] = array("Recoveredbydays"=>$computerRecovered);
-	}
  }
  }
   $l = 0;
  foreach($NdatearrActive as $key => $val){
 	$l++;
 	$Activedate = date("Y-m-d",strtotime($key." -1 day"));
-	if(isset($NdatearrActive[$Activedate])){
+	$Activedate2 = date("Y-m-d",strtotime($key." -2 day"));
+	if(isset($NdatearrActive[$Activedate]) && ($NdatearrActive[$Activedate]<$val) && ($NdatearrActive[$Activedate2]<$NdatearrActive[$Activedate]) && ($l<count($NdatearrActive))){
 	$computerActive= $val - $NdatearrActive[$Activedate];
- if($computerDeaths>0){
  $allActivebydays[] = array("Activebydays"=>$computerActive);
-	}
  }
  }
-$theresults = array("totalConfirmed"=>$totalConfirmed,"totalDeaths"=>$totalDeaths,"totalRecovered"=>$totalRecovered,"totalActive"=>$totalActive,"allConfirmedbydays"=>$allConfirmedbydays,"allDeathsbydays"=>$allDeathsbydays,"allRecoveredbydays"=>$allRecoveredbydays,"allActivebydays"=>$allActivebydays); 
+ $theresults = array("totalConfirmed"=>$totalConfirmed,"totalDeaths"=>$totalDeaths,"totalRecovered"=>$totalRecovered,"totalActive"=>$totalActive,"allConfirmedbydays"=>$allConfirmedbydays,"allDeathsbydays"=>$allDeathsbydays,"allRecoveredbydays"=>$allRecoveredbydays,"allActivebydays"=>$allActivebydays); 
  return $theresults;
 }
 
@@ -269,7 +265,6 @@ $count_until_end = count($anarray) - $entries;
 $sliced = array_slice($anarray,$count_until_end);
 return $sliced;
 }
-$these_countries = uniqueCC($props2);
 
 function flattenarray($onearray,$thekey){
 $arraytoreturn = array();
@@ -279,12 +274,22 @@ $arraytoreturn = array();
 $flattenedarray = implode(",",$arraytoreturn);
 return $flattenedarray;
 }
+
+
+function writeintosql($theprops,$interval,$rowcount,$link,$tablenameSD,$thedatetoday,$thedatebefore){
+$columnarray = array("IDMC","FIPS","Admin2","Province_State","Country_Region","Country_Code","Country_CodeA3","Last_Update","Lat","Lon","Confirmed","Deaths","Recovered","Active","Combined_Key","Ndate","NCCdate");
+ $props2 = getgroup($theprops,"NCCdate");
+ $nbkeys = count($props2);
+array_unshift($props2,array("days"=>$interval,"count"=>$nbkeys,"baserowcount"=>$rowcount));
+$these_countries = uniqueCC($props2);
+
 foreach ($these_countries as $key => $val){
  if(isset($val) && $val != ""){
- $letableau = retreivevalbydays($props2,$val,"Confirmed","Deaths","Recovered","Active");
+ $letableau = retreivevalbydays($props2,$val,"Confirmed","Deaths","Recovered","Active",$thedatetoday);
  $totalActive = $letableau["totalActive"];
+ echo "total deaths : ".$letableau["totalDeaths"]."\n";
  $totalConfirmed = $letableau["totalConfirmed"];
- $totalRecovered = $letableau["totalRecovered"];
+ $totalRecovered = $letableau["totalRecovered"]; 
  $totalDeaths = $letableau["totalDeaths"];
  $TableConfirmed = flattenarray($letableau["allConfirmedbydays"],"Confirmedbydays");
  $TableDeaths  = flattenarray($letableau["allDeathsbydays"],"Deathsbydays");
@@ -328,11 +333,14 @@ TableConfirmed,
 TableDeaths,
 TableRecovered,
 TableActive
-) values ('".clean($before)."', '".clean($today)."', '".clean($val)."', '".clean($totalConfirmed)."', '".clean($totalDeaths)."', '".clean($totalRecovered)."', '".clean($totalActive)."', '".clean(implode(",",$ETConfirmed))."', '".clean(implode(",",$ETDeaths))."', '".clean(implode(",",$ETRecovered))."', '".clean(implode(",",$ETActive))."', '".clean(implode(",",$ETConfirmedseven))."', '".clean(implode(",",$ETDeathsseven))."', '".clean(implode(",",$ETRecoveredseven))."', '".clean(implode(",",$ETActiveseven))."', '".clean(implode(",",$ETConfirmedfourteen))."', '".clean(implode(",",$ETDeathsfourteen))."', '".clean(implode(",",$ETRecoveredfourteen))."', '".clean(implode(",",$ETActivefourteen))."', '".clean($TableConfirmed)."', '".clean($TableDeaths)."', '".clean($TableRecovered)."', '".clean($TableActive)."')";
+) values ('".clean($thedatebefore)."', '".clean($thedatetoday)."', '".clean($val)."', '".clean($totalConfirmed)."', '".clean($totalDeaths)."', '".clean($totalRecovered)."', '".clean($totalActive)."', '".clean(implode(",",$ETConfirmed))."', '".clean(implode(",",$ETDeaths))."', '".clean(implode(",",$ETRecovered))."', '".clean(implode(",",$ETActive))."', '".clean(implode(",",$ETConfirmedseven))."', '".clean(implode(",",$ETDeathsseven))."', '".clean(implode(",",$ETRecoveredseven))."', '".clean(implode(",",$ETActiveseven))."', '".clean(implode(",",$ETConfirmedfourteen))."', '".clean(implode(",",$ETDeathsfourteen))."', '".clean(implode(",",$ETRecoveredfourteen))."', '".clean(implode(",",$ETActivefourteen))."', '".clean($TableConfirmed)."', '".clean($TableDeaths)."', '".clean($TableRecovered)."', '".clean($TableActive)."')";
 $result = mysqli_query($link,$sql)or die( mysqli_error($link) );  
 }
 }
 @mysqli_free_result($result);
+}
+
+function writefilefull($tablenameSD,$folderwheresaved,$link){
 $sql="SELECT * FROM `".$tablenameSD."`";
 $rs =   mysqli_query($link,$sql) or die(mysqli_error($link));
 $outputSD_Variation_Table = realpath(dirname($_SERVER['PHP_SELF']))."/".$folderwheresaved."/SD_Variation_Table_covid_19_daily_reports_FULL.csv"; 
@@ -346,4 +354,43 @@ fputcsv($fp, $row);
 }
 fclose($fp);
 @mysqli_free_result($rs);
+echo "output written in : ".$outputSD_Variation_Table;
+}
+
+$htoday =  date("H");
+if($htoday <$updatehour){
+  $today = date("Y-m-d",strtotime(date("Y-m-d")." -2 day"));
+ }else{
+  $today = date("Y-m-d",strtotime(date("Y-m-d")." -1 day"));
+}
+if(isset($datefrom)){
+$numberloop = dateDiff(date("Y-m-d",strtotime($datefrom)), $today);
+echo "Loop started between ".$datefrom." to ".$today." that's ".$numberloop." days\n";
+for($i=0 ;$i<=$numberloop;$i++){
+  $datefromi = date("Y-m-d",strtotime(date("Y-m-d",strtotime($datefrom))." +".$i." day"));
+  $theactualdateminus = date("Y-m-d",strtotime(date("Y-m-d",strtotime($datefromi))." -32 day"));
+  echo "generating data #".$i." from ".$datefromi." to ".$theactualdateminus." on a 32 days interval\n";
+  $daterequest = "(DATE(`Last_Update`) BETWEEN '".$theactualdateminus."' AND '".$datefromi."')";
+  $debugreq ="SELECT * FROM `".$tablename."` WHERE ".$daterequest." ORDER BY Last_Update;";
+  echo "Launching :\n".$debugreq;
+  $debugreq2 = "select * FROM ".$tablenameSD." where Date(`ToDate`)='".$datefromi."';";
+  echo "Results debug available by issuing\n".$debugreq2."\n";
+  $interval = dateDiff($theactualdateminus, $datefromi);
+  $thepropsarr = selectfromdate($rowresultlimit,$link,$daterequest);
+  $theprops = $thepropsarr["props"];
+  $rowcount = $thepropsarr["rowcount"];
+  writeintosql($theprops,$interval,$rowcount,$link,$tablenameSD,$datefromi,$theactualdateminus);
+ }
+ writefilefull($tablenameSD,$folderwheresaved,$link);
+}else{
+$before = date("Y-m-d",strtotime($today." -32 day"));
+$interval = dateDiff($before, $today);
+$daterequest = "(DATE(`Last_Update`) BETWEEN '".$before."' AND '".$today."')";
+echo "Daily option selected so \n querying date from ".$today." to ".$before."\n";
+$thepropsarr = selectfromdate($rowresultlimit,$link,$daterequest);
+$theprops = $thepropsarr["props"];
+$rowcount = $thepropsarr["rowcount"];
+writeintosql($theprops,$interval,$rowcount,$link,$tablenameSD,$today,$before);
+writefilefull($tablenameSD,$folderwheresaved,$link);
+}
 ?>
