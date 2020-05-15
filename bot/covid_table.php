@@ -23,9 +23,6 @@ exit;
 $folderwheresaved = $f["f"];
 $datefrom = $d["d"];
 
-//cb
-if(!isset($_GET["callback"])){$callback = "callback";} else {$callback = $_GET["callback"];}
-
 //Connection mysqli
 $link = mysqli_connect($host,$username,$password,$dbname);
 if (!$link->set_charset("utf8")) {
@@ -70,7 +67,7 @@ function dateDiff($date1, $date2){
 
 function selectfromdate($rowresultlimit,$link,$daterequest){
 //IDMC	FIPS	Admin2	Province_State	Country_Region	Country_Code	Country_CodeA3	Last_Update	Lat	Lon	Confirmed	Deaths	Recovered	Active	Combined_Key
-$query = "SELECT * FROM `MC` WHERE ".$daterequest." ORDER BY Last_Update;\n";
+$query = "SELECT * FROM `".$tablename."` WHERE ".$daterequest." ORDER BY Last_Update;\n";
 //echo "debug : \n".$query."\n";
 $result=mysqli_query($link,$query)or die( mysqli_error($link) );
 $props = array();
