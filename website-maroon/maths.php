@@ -132,7 +132,7 @@
                   The standard deviation $$S = \sqrt{ \frac{(\sum x - \bar{x})^{2}} n} = 80.622$$
                   The Coefficient of variation is $$CV = \frac{S}{\bar{x}} * 100 \% = 24.03 $$  
                </p>
-               <p>By comparing the coefficient of variation with the number of deaths over 7, 14 , 31 days we can estimate more precisely the variation of the epidemy trough time. Moreover these numbers open the possibilities to estimate the efficiency of the confinement measures and their impact related to these 4 following factors : Active, Deaths, Recovered, Confirmed.</p>
+               <p>By comparing the coefficient of variation with the number of deaths over 7, 14 , 31 days we can estimate more precisely the variation of the epidemy trough time. Moreover these numbers open the possibilities to estimate the efficiency of the isolation measures and their impact related to these 4 following factors : Active, Deaths, Recovered, Confirmed.</p>
             </div>
 <!-- Footer -->
 <hr>
