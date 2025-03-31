@@ -1,5 +1,5 @@
-#rename that to htaccess and before be ensured that you have issued this command
-#a2enmod headers rewrite ssl
+# rename that file to .htaccess and before be ensured that you have issued this command
+# a2enmod headers rewrite ssl
 <IfModule mod_headers.c>
     <FilesMatch "\.(jpg|jpeg|png|gif|pdf|woff)$">
         Header set Cache-Control "max-age=604800, public"
